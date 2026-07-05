@@ -113,6 +113,20 @@ function seededShuffle(arr, rng) {
   return a;
 }
 
+/* 六爻 × 閘門主題的入門詮釋（本站推導，非 Ra 原典逐爻關鍵字） */
+function lineInterpretation(gate, line) {
+  const kw = gate.keyword;
+  switch (line) {
+    case 1: return `在「${kw}」的主題上，調查者需要先把基礎打穩：研究、查證、弄懂原理，安全感到位了，力量才出得來。不確定的時候，回到基本功就對了。`;
+    case 2: return `這股「${kw}」的天賦自然流露，自己往往不覺得特別。給自己足夠的獨處空間，等真正認得出你的呼喚出現，再走出去回應。`;
+    case 3: return `用嘗試錯誤來學「${kw}」：撞到牆不是失敗，是收集資料。每一次「原來行不通」，都讓你更清楚什麼行得通。`;
+    case 4: return `「${kw}」的機會藏在人脈網絡裡：先建立真誠的關係，機會自然透過朋友與熟人來敲門；跳過關係硬闖，反而事倍功半。`;
+    case 5: return `旁人會把對「${kw}」的期待投射到你身上。務實地解決真問題，名聲自然累積；接下做不到的期待，投射就會反噬。`;
+    case 6: return `站上屋頂看「${kw}」：前半生下場體驗，中段退後觀察，後段以身作則。你的任務不是說教，而是活出來給人看。`;
+    default: return "";
+  }
+}
+
 function gateChannels(no) {
   return CHANNELS.filter(([a, b]) => a === no || b === no)
     .map(([a, b, name]) => ({ partner: a === no ? b : a, name, label: `${a}–${b}` }));
@@ -315,11 +329,15 @@ function renderGate(arg) {
       <div class="card gift-side"><h3>✨ 天賦面（高頻）</h3><p>${esc(detail.gift)}</p></div>
     </div>
     <div class="card">
-      <h3>六爻速覽</h3>
-      <p class="meta">每個閘門可再細分成六條「爻」。以下以六爻的通用原型，對應本閘門「${esc(gate.keyword)}」的主題，作為入門參考；各爻的細部關鍵字屬進階內容。</p>
+      <h3>六爻速覽 <span class="tag">進階·選讀</span></h3>
+      <p class="meta">每個閘門可再細分成六條「爻」。趕進度的話這區可以直接跳過；想深入就點各爻展開，會看到「爻原型 × ${esc(gate.keyword)}」的入門詮釋（本站推導，非 Ra 原典的逐爻關鍵字）。</p>
       <ul class="lines-list">
         ${LINE_ARCHETYPES.map(l => `
-          <li><span class="line-no">第 ${l.line} 爻</span><strong>${esc(l.name)}</strong>（${esc(l.theme)}）— ${esc(l.desc)}</li>`).join("")}
+          <li><details>
+            <summary><span class="line-no">第 ${l.line} 爻</span><strong>${esc(l.name)}</strong>（${esc(l.theme)}）</summary>
+            <p class="meta">${esc(l.desc)}</p>
+            <p>${esc(lineInterpretation(gate, l.line))}</p>
+          </details></li>`).join("")}
       </ul>
     </div>
     <div class="reflect-box"><div class="label">🪞 隨身反思</div>${esc(detail.reflect)}</div>` : ""}

@@ -368,6 +368,10 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 .5rem; }
   border-bottom: 1px dashed var(--border);
 }
 .lines-list li:last-child { border-bottom: none; }
+.lines-list summary { cursor: pointer; }
+.lines-list summary:hover .line-no { text-decoration: underline; }
+.lines-list details p { margin: .45rem 0 .2rem 3.4em; }
+.lines-list details[open] summary { margin-bottom: .2rem; }
 .line-no {
   display: inline-block;
   min-width: 3.4em;
