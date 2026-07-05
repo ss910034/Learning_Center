@@ -16,6 +16,7 @@
   --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.04);
 }
 
+/* 未手動選主題時，跟隨系統深色模式（等同「深夜紫」） */
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #191722;
@@ -32,6 +33,91 @@
     --bad-soft: #452720;
     --shadow: 0 1px 3px rgba(0,0,0,.4);
   }
+}
+
+/* ===== 手動選擇的佈景主題（優先於系統設定） ===== */
+:root[data-theme="light"] {
+  --bg: #faf8f4;
+  --surface: #ffffff;
+  --text: #2d2a26;
+  --muted: #6f6a62;
+  --border: #e6e1d8;
+  --primary: #7c5cbf;
+  --primary-soft: #efe9fa;
+  --accent: #c98a2d;
+  --ok: #3d8b62;
+  --ok-soft: #e4f2ea;
+  --bad: #b8503d;
+  --bad-soft: #f9e9e5;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.04);
+}
+
+/* 🔮 深夜紫：神祕溫暖，紫水晶與燭光 */
+:root[data-theme="violet"] {
+  --bg: #191722;
+  --surface: #232030;
+  --text: #ece9f2;
+  --muted: #a49ec0;
+  --border: #363150;
+  --primary: #a98ee6;
+  --primary-soft: #2e2846;
+  --accent: #e0a952;
+  --ok: #6cc39a;
+  --ok-soft: #1f3a2e;
+  --bad: #e08a76;
+  --bad-soft: #452720;
+  --shadow: 0 1px 3px rgba(0,0,0,.4);
+}
+
+/* 🌌 午夜藍：沉靜星空，冷冽清晰 */
+:root[data-theme="midnight"] {
+  --bg: #0b1120;
+  --surface: #141d33;
+  --text: #e4eaf7;
+  --muted: #8fa0c4;
+  --border: #26334f;
+  --primary: #82a5f5;
+  --primary-soft: #1a2745;
+  --accent: #e2b45f;
+  --ok: #5fc796;
+  --ok-soft: #12352a;
+  --bad: #e58873;
+  --bad-soft: #3d2018;
+  --shadow: 0 1px 3px rgba(0,0,0,.5);
+}
+
+/* 🌑 純黑 OLED：極致省電，高對比 */
+:root[data-theme="oled"] {
+  --bg: #000000;
+  --surface: #101014;
+  --text: #ececf0;
+  --muted: #9a97a8;
+  --border: #26242e;
+  --primary: #b49af0;
+  --primary-soft: #1d1730;
+  --accent: #d9a44a;
+  --ok: #5fc796;
+  --ok-soft: #0e2a1d;
+  --bad: #e08a76;
+  --bad-soft: #331b13;
+  --shadow: 0 0 0 1px #1a1a20;
+}
+
+/* 🌲 墨綠：森林夜色，沉穩護眼 */
+:root[data-theme="forest"] {
+  --bg: #0e1512;
+  --surface: #17221c;
+  --text: #e7efe9;
+  --muted: #93a89b;
+  --border: #2a3a31;
+  --primary: #7ecfa3;
+  --primary-soft: #143026;
+  --accent: #d8b25c;
+  --ok: #6cc39a;
+  --ok-soft: #12362a;
+  --bad: #dd8b70;
+  --bad-soft: #3b2117;
+  --shadow: 0 1px 3px rgba(0,0,0,.45);
 }
 
 * { box-sizing: border-box; }
@@ -85,6 +171,18 @@ a:hover { text-decoration: underline; }
   background: var(--primary-soft);
   color: var(--primary);
   font-weight: 600;
+}
+
+.theme-select {
+  margin-left: auto;
+  font-family: inherit;
+  font-size: .85rem;
+  padding: .3rem .5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
 }
 
 /* ===== 版面 ===== */
@@ -250,6 +348,41 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 .5rem; }
   margin: .8rem 0;
 }
 .example-box .label { font-weight: 700; color: var(--accent); font-size: .85rem; }
+
+/* ===== 閘門深化區塊 ===== */
+.spectrum {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.spectrum .card { margin-bottom: 0; }
+.spectrum .shadow-side { border-left: 3px solid var(--bad); }
+.spectrum .gift-side { border-left: 3px solid var(--ok); }
+.spectrum .shadow-side h3 { color: var(--bad); }
+.spectrum .gift-side h3 { color: var(--ok); }
+
+.lines-list { list-style: none; padding: 0; margin: 0; }
+.lines-list li {
+  padding: .55rem 0;
+  border-bottom: 1px dashed var(--border);
+}
+.lines-list li:last-child { border-bottom: none; }
+.line-no {
+  display: inline-block;
+  min-width: 3.4em;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.reflect-box {
+  background: var(--primary-soft);
+  border-radius: var(--radius);
+  padding: 1rem 1.3rem;
+  margin-bottom: 1rem;
+  font-size: 1.02rem;
+}
+.reflect-box .label { font-weight: 700; color: var(--primary); font-size: .85rem; }
 
 /* ===== 測驗 ===== */
 .quiz-option {

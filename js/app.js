@@ -37,7 +37,39 @@ const Progress = {
     list.unshift(entry);
     Store.set("hd_quiz_history", list.slice(0, 50));
   },
+  dailyResults() { return Store.get("hd_daily_results", {}); },
+  recordDaily(date, score, total) {
+    const results = this.dailyResults();
+    if (!results[date]) { // 每日成績以第一次作答為準
+      results[date] = { score, total };
+      Store.set("hd_daily_results", results);
+    }
+  },
+  dailyStreak() {
+    const results = this.dailyResults();
+    let streak = 0;
+    const d = new Date();
+    if (!results[localDate(d)]) d.setDate(d.getDate() - 1); // 今天還沒考，從昨天往回數
+    while (results[localDate(d)]) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    }
+    return streak;
+  },
 };
+
+/* ---------- 佈景主題 ---------- */
+function initTheme() {
+  const select = document.getElementById("theme-select");
+  if (!select) return;
+  select.value = Store.get("hd_theme", "auto");
+  select.onchange = () => {
+    const t = select.value;
+    Store.set("hd_theme", t);
+    if (t === "auto") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+  };
+}
 
 /* ---------- 小工具 ---------- */
 const centerName = id => (CENTERS.find(c => c.id === id) || {}).name || id;
@@ -48,6 +80,34 @@ function shuffle(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function localDate(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/* 以日期字串產生種子亂數，讓全站每天出同一份「每日一考」 */
+function seededRng(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return function () {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle(arr, rng) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
@@ -81,7 +141,7 @@ function navigate() {
   window.scrollTo(0, 0);
 }
 window.addEventListener("hashchange", navigate);
-window.addEventListener("DOMContentLoaded", navigate);
+window.addEventListener("DOMContentLoaded", () => { initTheme(); navigate(); });
 
 /* ---------- 首頁 ---------- */
 function renderHome() {
@@ -90,6 +150,8 @@ function renderHome() {
   const history = Progress.quizHistory();
   const best = history.length ? Math.max(...history.map(h => Math.round(h.score / h.total * 100))) : null;
   const tidbit = TIDBITS[Math.floor(Math.random() * TIDBITS.length)];
+  const todayResult = Progress.dailyResults()[localDate()];
+  const streak = Progress.dailyStreak();
 
   $app.innerHTML = `
     <div class="hero">
@@ -111,6 +173,13 @@ function renderHome() {
     </div>
 
     <div class="card">
+      <h3>📅 每日一考 ${streak ? `<span class="tag gold">🔥 連續 ${streak} 天</span>` : ""}</h3>
+      ${todayResult
+        ? `<p>今日已完成：<strong>${todayResult.score} / ${todayResult.total}</strong>，明天見！</p>`
+        : `<p class="meta">今天的 5 題還沒做，花兩分鐘保持手感吧。</p><button class="btn small" id="home-daily-start">開始今日挑戰</button>`}
+    </div>
+
+    <div class="card">
       <h3>💡 今日小知識：${esc(tidbit.title)}</h3>
       <p>${esc(tidbit.text)}</p>
       <a href="#/tidbits">看更多小知識 →</a>
@@ -124,6 +193,8 @@ function renderHome() {
       <div class="card"><h3>4️⃣ 追蹤進度</h3><p class="meta">在學習進度頁查看掌握度、各中心的完成度與測驗紀錄。</p></div>
     </div>
   `;
+  const dailyBtn = document.getElementById("home-daily-start");
+  if (dailyBtn) dailyBtn.onclick = startDailyQuiz;
 }
 
 /* ---------- 教學 ---------- */
@@ -222,6 +293,7 @@ function renderGate(arg) {
   const gate = gateByNo(Number(arg));
   if (!gate) { location.hash = "#/gates"; return; }
   const learned = Progress.learnedGates().includes(gate.no);
+  const detail = GATE_DETAILS[gate.no];
   const channels = gateChannels(gate.no);
   const prev = gateByNo(gate.no === 1 ? 64 : gate.no - 1);
   const next = gateByNo(gate.no === 64 ? 1 : gate.no + 1);
@@ -236,6 +308,21 @@ function renderGate(arg) {
     </div>
     <div class="card"><h3>閘門主題</h3><p>${esc(gate.desc)}</p></div>
     <div class="example-box"><div class="label">🌱 生活範例</div><p>${esc(gate.example)}</p></div>
+    ${detail ? `
+    <div class="card"><h3>🔍 深入認識</h3><p>${esc(detail.deep)}</p></div>
+    <div class="spectrum">
+      <div class="card shadow-side"><h3>🌑 陰影面（低頻）</h3><p>${esc(detail.shadow)}</p></div>
+      <div class="card gift-side"><h3>✨ 天賦面（高頻）</h3><p>${esc(detail.gift)}</p></div>
+    </div>
+    <div class="card">
+      <h3>六爻速覽</h3>
+      <p class="meta">每個閘門可再細分成六條「爻」。以下以六爻的通用原型，對應本閘門「${esc(gate.keyword)}」的主題，作為入門參考；各爻的細部關鍵字屬進階內容。</p>
+      <ul class="lines-list">
+        ${LINE_ARCHETYPES.map(l => `
+          <li><span class="line-no">第 ${l.line} 爻</span><strong>${esc(l.name)}</strong>（${esc(l.theme)}）— ${esc(l.desc)}</li>`).join("")}
+      </ul>
+    </div>
+    <div class="reflect-box"><div class="label">🪞 隨身反思</div>${esc(detail.reflect)}</div>` : ""}
     <div class="card">
       <h3>相關通道</h3>
       ${channels.map(ch => `
@@ -273,11 +360,21 @@ function renderTidbits() {
 /* ---------- 抽考 ---------- */
 function renderQuizSetup() {
   const learnedCount = Progress.learnedGates().length;
+  const todayResult = Progress.dailyResults()[localDate()];
+  const streak = Progress.dailyStreak();
   $app.innerHTML = `
     <h1>✏️ 閘門抽考</h1>
     <p class="page-desc">系統會從閘門資料隨機出題（名稱、中心、關鍵字、敘述配對），做完立即檢核。</p>
     <div class="card">
-      <h3>測驗設定</h3>
+      <h3>📅 每日一考 ${streak ? `<span class="tag gold">🔥 連續 ${streak} 天</span>` : ""}</h3>
+      <p class="meta">每天固定 5 題、全站題目相同，成績以當天第一次作答為準。天天報到，養成複習的習慣！</p>
+      ${todayResult
+        ? `<p>今日已完成：<strong>${todayResult.score} / ${todayResult.total}</strong>。想再練習可以重考，但不影響今日成績。</p>
+           <button class="btn secondary" id="daily-start">再練一次今日題目</button>`
+        : `<button class="btn" id="daily-start">開始今日挑戰</button>`}
+    </div>
+    <div class="card">
+      <h3>🎲 自由抽考</h3>
       <p>
         題數：
         <select id="quiz-count">
@@ -307,14 +404,10 @@ function renderQuizSetup() {
     const scope = document.getElementById("quiz-scope").value;
     startQuiz(count, scope);
   };
+  document.getElementById("daily-start").onclick = startDailyQuiz;
 }
 
-function buildQuestions(count, scope) {
-  const learned = Progress.learnedGates();
-  let pool = scope === "learned" ? GATES.filter(g => learned.includes(g.no)) : GATES;
-  if (pool.length < 4) pool = GATES;
-
-  const makers = [
+const QUESTION_MAKERS = [
     gate => ({ // 編號 → 名稱
       q: `閘門 ${gate.no} 的名稱是？`,
       answer: gate.name,
@@ -343,15 +436,32 @@ function buildQuestions(count, scope) {
       explain: `這是閘門 ${gate.no}（${gate.name}）的主題，關鍵字：${gate.keyword}。`,
       gateNo: gate.no,
     }),
-  ];
+];
 
+function buildQuestions(count, scope) {
+  const learned = Progress.learnedGates();
+  let pool = scope === "learned" ? GATES.filter(g => learned.includes(g.no)) : GATES;
+  if (pool.length < 4) pool = GATES;
   return shuffle(pool).slice(0, count).map(gate =>
-    makers[Math.floor(Math.random() * makers.length)](gate));
+    QUESTION_MAKERS[Math.floor(Math.random() * QUESTION_MAKERS.length)](gate));
+}
+
+/* 每日一考：以日期為種子，全站當天題目相同 */
+function buildDailyQuestions(date) {
+  const rng = seededRng("hd-daily-" + date);
+  return seededShuffle(GATES, rng).slice(0, 5).map(gate =>
+    QUESTION_MAKERS[Math.floor(rng() * QUESTION_MAKERS.length)](gate));
 }
 
 function startQuiz(count, scope) {
   const questions = buildQuestions(count, scope);
   const state = { questions, index: 0, correct: 0, wrongGates: [], scope };
+  showQuestion(state);
+}
+
+function startDailyQuiz() {
+  const date = localDate();
+  const state = { questions: buildDailyQuestions(date), index: 0, correct: 0, wrongGates: [], scope: "daily", date };
   showQuestion(state);
 }
 
@@ -400,6 +510,8 @@ function showQuizResult(state) {
   const { questions, correct, wrongGates, scope } = state;
   const pct = Math.round(correct / questions.length * 100);
   const uniqueWrong = [...new Set(wrongGates)];
+  const alreadyDoneToday = scope === "daily" && !!Progress.dailyResults()[state.date];
+  if (scope === "daily") Progress.recordDaily(state.date, correct, questions.length);
   Progress.addQuizResult({
     date: new Date().toISOString(),
     score: correct,
@@ -407,6 +519,7 @@ function showQuizResult(state) {
     scope,
     wrong: uniqueWrong,
   });
+  const streak = scope === "daily" ? Progress.dailyStreak() : 0;
 
   const verdict = pct >= 90 ? "太強了，繼續往下一批閘門前進！"
     : pct >= 80 ? "通過檢核標準（80%），可以安心往下學。"
@@ -416,8 +529,10 @@ function showQuizResult(state) {
   $app.innerHTML = `
     <h1>📊 測驗結果</h1>
     <div class="card">
+      ${scope === "daily" ? '<p style="text-align:center"><span class="tag gold">📅 每日一考</span></p>' : ""}
       <div class="score-big">${correct} / ${questions.length}（${pct}%）</div>
       <p style="text-align:center">${verdict}</p>
+      ${scope === "daily" ? `<p style="text-align:center">🔥 連續挑戰 <strong>${streak}</strong> 天${alreadyDoneToday ? "（今日成績以第一次作答為準）" : ""}</p>` : ""}
       <div class="progress-bar"><span style="width:${pct}%"></span></div>
     </div>
     ${uniqueWrong.length ? `
@@ -485,6 +600,7 @@ function renderProgress() {
 
     <h2>測驗紀錄</h2>
     <div class="card">
+      <p>📅 每日一考：${Object.keys(Progress.dailyResults()).length ? `已完成 ${Object.keys(Progress.dailyResults()).length} 天，目前連續 🔥 ${Progress.dailyStreak()} 天` : `還沒開始，<a href="#/quiz">今天就來第一考！</a>`}</p>
       ${history.length ? `
       <div class="table-wrap"><table>
         <tr><th>日期</th><th>成績</th><th>範圍</th><th>答錯閘門</th></tr>
@@ -492,7 +608,7 @@ function renderProgress() {
           <tr>
             <td>${new Date(h.date).toLocaleString("zh-TW", { dateStyle: "short", timeStyle: "short" })}</td>
             <td>${h.score}/${h.total}（${Math.round(h.score / h.total * 100)}%）</td>
-            <td>${h.scope === "learned" ? "已學閘門" : "全部閘門"}</td>
+            <td>${h.scope === "learned" ? "已學閘門" : h.scope === "daily" ? "📅 每日一考" : "全部閘門"}</td>
             <td>${(h.wrong || []).map(no => `<a href="#/gate/${no}">${no}</a>`).join("、") || "—"}</td>
           </tr>`).join("")}
       </table></div>` : `<p class="meta">還沒有測驗紀錄，<a href="#/quiz">來做第一次抽考吧！</a></p>`}
