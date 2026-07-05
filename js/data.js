@@ -10,13 +10,13 @@
 const CENTERS = [
   { id: "head",   name: "頭腦中心",   type: "壓力中心", theme: "靈感與疑問的壓力" },
   { id: "ajna",   name: "邏輯中心",   type: "覺察中心", theme: "概念化與思考" },
-  { id: "throat", name: "喉嚨中心",   type: "動力樞紐", theme: "表達與顯化" },
+  { id: "throat", name: "喉嚨中心",   type: "顯化中心", theme: "表達與顯化" },
   { id: "g",      name: "G 中心",     type: "身份中心", theme: "愛、方向與自我認同" },
   { id: "heart",  name: "意志力中心", type: "動力中心", theme: "意志力與自我價值" },
   { id: "sacral", name: "薦骨中心",   type: "動力中心", theme: "生命力與工作能量" },
   { id: "spleen", name: "直覺中心",   type: "覺察中心", theme: "直覺、健康與生存" },
   { id: "solar",  name: "情緒中心",   type: "覺察／動力中心", theme: "情緒波浪與感受" },
-  { id: "root",   name: "根部中心",   type: "壓力中心", theme: "腎上腺素與行動壓力" },
+  { id: "root",   name: "根部中心",   type: "壓力／動力中心", theme: "腎上腺素與行動壓力" },
 ];
 
 const GATES = [
